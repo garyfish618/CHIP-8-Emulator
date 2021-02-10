@@ -1,12 +1,17 @@
 #include <string>
 
 #define MEMORY_SIZE 4096
+#define ROM_SIZE 2559
 #define STACK_SIZE 16
-#define SYS 
+#define ROM_START_ADDR 0x200
+
+enum instructionType {CLS, RET, SYS, JP, CALL, SE, SNE, LD, ADD, OR, AND, XOR, ADD, SUB, SHR, SUBN, SHL, RND, DRW, SKP};
 
 class Chip8 {
 	
 	private:
+		short buffer[ROM_SIZE];
+
 		unsigned char mem[MEMORY_SIZE];
 		unsigned short stack[STACK_SIZE];
 
@@ -28,13 +33,15 @@ class Chip8 {
 		unsigned char registerVF;
 		unsigned short registerI;
 		unsigned short programCounter;
-		unsigned char stackPointer;
+		unsigned short* stackPointer;
 		//TODO Create timer and sound registers
 
-		std::string determineInstruction(unsigned short instruction);
+		int determineInstruction(unsigned short instruction);
 	
 	public:
 		void executeInstruction();
+		char viewMemoryCell(int cell);
+		Chip8(FILE*);
 		
 
 
