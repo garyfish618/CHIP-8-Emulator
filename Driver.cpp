@@ -3,7 +3,7 @@
 
 int main() {
 	FILE* romFile;
-	errno_t fileError = fopen_s(&romFile, "c8_test.c8", "rb");
+	errno_t fileError = fopen_s(&romFile, "drawZero.c8", "rb");
 
 	if (fileError != 0) {
 		
@@ -20,6 +20,12 @@ int main() {
 
 	}
 
+
+	while (1) {
+		
+		emulator.executeInstruction();
+
+	}
 	
 
 

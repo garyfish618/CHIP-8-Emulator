@@ -1,42 +1,36 @@
 #include <string>
+#include <SDL.h>
+#undef main
+
 
 #define MEMORY_SIZE 4096
-#define ROM_SIZE 2559
+#define ROM_SIZE 3583
 #define STACK_SIZE 16
 #define ROM_START_ADDR 0x200
+#define DISPLAY_HEIGHT_PX 32
+#define DISPLAY_WIDTH_PX 64
+#define SCALE 12
 
-enum instructionType {CLS, RET, SYS, JP, CALL, SE, SNE, LD, ADD, OR, AND, XOR, ADD, SUB, SHR, SUBN, SHL, RND, DRW, SKP};
+enum instructionType {CLS, RET, SYS, JP, CALL, SE, SNE, LD, OR, AND, XOR, ADD, SUB, SHR, SUBN, SHL, RND, DRW, SKP};
 
 class Chip8 {
 	
 	private:
-		short buffer[ROM_SIZE];
-
+		unsigned char buffer[ROM_SIZE];
 		unsigned char mem[MEMORY_SIZE];
 		unsigned short stack[STACK_SIZE];
-
-		unsigned char registerV0;
-		unsigned char registerV1;
-		unsigned char registerV2;
-		unsigned char registerV3;
-		unsigned char registerV4;
-		unsigned char registerV5;
-		unsigned char registerV6;
-		unsigned char registerV7;
-		unsigned char registerV8;
-		unsigned char registerV9;
-		unsigned char registerVA;
-		unsigned char registerVB;
-		unsigned char registerVC;
-		unsigned char registerVD;
-		unsigned char registerVE;
-		unsigned char registerVF;
+		unsigned char registers[15];
 		unsigned short registerI;
 		unsigned short programCounter;
 		unsigned short* stackPointer;
+		char display[DISPLAY_WIDTH_PX][DISPLAY_HEIGHT_PX];
+
+		SDL_Window* window;
+		SDL_Surface* sur;
 		//TODO Create timer and sound registers
 
 		int determineInstruction(unsigned short instruction);
+		void clearDisplay();
 	
 	public:
 		void executeInstruction();
