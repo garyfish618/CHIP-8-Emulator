@@ -1,5 +1,6 @@
 #include <string>
 #include <SDL.h>
+#include<SDL_mixer.h>
 #undef main
 
 
@@ -11,15 +12,20 @@
 #define DISPLAY_WIDTH_PX 64
 #define SCALE 12
 
-enum instructionType {CLS, RET, SYS, JP, CALL, SE, SNE, LD, OR, AND, XOR, ADD, SUB, SHR, SUBN, SHL, RND, DRW, SKP};
+
+
+enum instructionType {CLS, RET, SYS, JP, CALL, SE, SNE, LD, OR, AND, XOR, ADD, SUB, SHR, SUBN, SHL, RND, DRW, SKP, SKNP};
 
 class Chip8 {
 	
 	private:
+		unsigned char ram[MEMORY_SIZE];
 		unsigned char buffer[ROM_SIZE];
 		unsigned char mem[MEMORY_SIZE];
 		unsigned short stack[STACK_SIZE];
 		unsigned char registers[15];
+		unsigned char delayTimer;
+		unsigned char soundTimer;
 		unsigned short registerI;
 		unsigned short programCounter;
 		unsigned short* stackPointer;
@@ -27,15 +33,20 @@ class Chip8 {
 
 		SDL_Window* window;
 		SDL_Surface* sur;
+		Mix_Chunk* beep;
 		//TODO Create timer and sound registers
 
 		int determineInstruction(unsigned short instruction);
 		void clearDisplay();
+		char determineKeyPress();
+		void executeInstruction();
 	
 	public:
-		void executeInstruction();
+		void start();
 		char viewMemoryCell(int cell);
 		Chip8(FILE*);
+		~Chip8();
+
 		
 
 

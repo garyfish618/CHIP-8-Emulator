@@ -3,7 +3,7 @@
 
 int main() {
 	FILE* romFile;
-	errno_t fileError = fopen_s(&romFile, "drawZero.c8", "rb");
+	errno_t fileError = fopen_s(&romFile, "Tests/c8_test.c8", "rb");
 
 	if (fileError != 0) {
 		
@@ -11,23 +11,8 @@ int main() {
 	}
 
 	Chip8 emulator(romFile);
-	unsigned char test = 0;
-	//Memory test
-	for (int i = 0; i < MEMORY_SIZE; i++) {
 
-		std::cout << std::dec << "Memory cell " << i << ":";
-		std::cout << std::hex << (int) test << "\n";
-
-	}
-
-
-	while (1) {
 		
-		emulator.executeInstruction();
+	emulator.start();
 
-	}
-	
-
-
-	
 }
