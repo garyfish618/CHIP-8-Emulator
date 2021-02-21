@@ -16,6 +16,11 @@ Chip8::Chip8(FILE* romPointer) {
 
 	}
 
+	for (int i = 0; i < STACK_SIZE; i++) {
+		stack[i] = 0;
+
+	}
+
 	//Add fonts
 	unsigned char fontset[] = {
 		0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
@@ -43,10 +48,7 @@ Chip8::Chip8(FILE* romPointer) {
 	
 	}
 
-	for (int i = 0; i < STACK_SIZE; i++) {
-		stack[i] = 0;
 
-	}
 
 	// Initialize SDL window
 	if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
@@ -139,11 +141,14 @@ void Chip8::clearDisplay() {
 	
 	//Clear screen to white
 	SDL_FillRect(sur, NULL, SDL_MapRGB(sur->format, 255, 255, 255));
+	SDL_UpdateWindowSurface(window);
+
 }
 
 void Chip8::start() {
 	double totalTime = 0;
-	double leftOver = 0;
+	double delayLeftOver = 0;
+	double soundLeftOver = 0;
 	while (1) {
 		if (soundTimer != 0 && Mix_Playing != 0) {
 			Mix_PlayChannel(-1, beep, -1);
@@ -157,21 +162,47 @@ void Chip8::start() {
 		totalTime += instructionTime.count();
 
 		if (totalTime / 16.667 >= 1) {
-			int decreaseTimer;
-			leftOver += std::modf(((totalTime / 16.667) + leftOver), (double*)&decreaseTimer);
+			double decreaseTimer = 1;
+			
 
 			//Update registers if need be
 			if (delayTimer != 0x00) {
-				delayTimer -= decreaseTimer;
+				delayLeftOver += std::modf(((totalTime / 16.667) + delayLeftOver), &decreaseTimer);
+				
+				if ((int)decreaseTimer >= delayTimer) {
+					delayTimer = 0x00;
+					delayLeftOver = 0;
+				}
+
+				else {	
+					delayTimer -= (int)decreaseTimer;
+				}
+
+				
+				
 			}
 
 			if (soundTimer != 0x00) {
-				soundTimer -= soundTimer;
-			}
+				soundLeftOver += std::modf(((totalTime / 16.667) + soundLeftOver), &decreaseTimer);
 
+				if ((int)decreaseTimer >= soundTimer) {
+					soundTimer = 0x00;
+					soundLeftOver = 0;
+				}
+
+				else {
+					soundTimer -= (int)decreaseTimer;
+				}
+
+				
+				
+			}
 
 			//Move timer back
 			totalTime -= decreaseTimer * 16.667;
+
+
+			
 		}
 
 		if (soundTimer == 0x00) {
@@ -207,7 +238,6 @@ void Chip8::executeInstruction() {
 	unsigned char kk = (unsigned char)nextInstruction & 0x00FF;
 
 	unsigned short sigByte = (nextInstruction & 0xF000) >> 12;
-
 	
 	switch (op) {
 	
@@ -232,7 +262,7 @@ void Chip8::executeInstruction() {
 
 		case CALL:
 			stackPointer++;
-			*stackPointer = programCounter;
+			*stackPointer = programCounter+2;
 			programCounter = addr;
 			break;
 
@@ -244,7 +274,7 @@ void Chip8::executeInstruction() {
 				}
 			}
 
-			else if (sigByte == 0x4) {
+			else if (sigByte == 0x3) {
 				if (registers[x] == kk) {
 					programCounter+= 2; //Skip next instruction
 				}
@@ -270,23 +300,23 @@ void Chip8::executeInstruction() {
 
 		case SHL:
 			if ((registers[x] & 0x80) >= 0x80) {
-				registers[14] = 0x01;
+				registers[15] = 0x01;
 			}
 
 			else {
-				registers[14] = 0x00;
+				registers[15] = 0x00;
 			}
 
-			registers[14] *= 2;
+			registers[x] *= 2;
 			break;
 		
 		case SHR:
 			if ((registers[x] & 0x01) >= 1) {
-				registers[14] = 0x01;
+				registers[15] = 0x01;
 			}
 
 			else {
-				registers[14] = 0x00;
+				registers[15] = 0x00;
 			}
 
 			registers[x] /= 2;
@@ -303,7 +333,7 @@ void Chip8::executeInstruction() {
 			}
 
 			else if (sigByte == 0xA) {
-				registerI = ( (registerI & 0xFF00) | addr );
+				registerI = addr & 0x0FFF;
 			}
 
 			else if (sigByte == 0xF) {
@@ -316,7 +346,7 @@ void Chip8::executeInstruction() {
 					case 0x0A:
 						while (1) {
 
-							char val = determineKeyPress();
+							unsigned char val = determineKeyPress();
 
 							if (val != 0xFF) {
 								registers[x] = val;
@@ -344,15 +374,15 @@ void Chip8::executeInstruction() {
 						break;
 
 					case 0x55:
-						for (int i = 0; i < x; i++)
+						for (int i = 0; i <= x; i++)
 						{
-							mem[registerI + i] = registers[i];
+							ram[registerI + i] = registers[i];
 						}
 						break;
 
 					case 0x65:
-						for (int i = 0; i < x; i++) {
-							registers[i] = mem[registerI + i];
+						for (int i = 0; i <= x; i++) {
+							registers[i] = ram[registerI + i];
 						}
 						break;
 				}
@@ -369,14 +399,14 @@ void Chip8::executeInstruction() {
 				unsigned int newVal = registers[x] + registers[y];
 
 				if (newVal > 255) {
-					registers[14] = 0x1; //Register VF
+					registers[15] = 0x1; //Register VF
 				}
 
 				else {
-					registers[14] = 0x0;
+					registers[15] = 0x0;
 				}
 
-				registers[x] = (unsigned char)(newVal & 0xFFFFFF00);
+				registers[x] = (unsigned char)(newVal & 0x000000FF);
 			}
 
 			else if (sigByte == 0xF) {
@@ -388,11 +418,11 @@ void Chip8::executeInstruction() {
 		case SUB:
 			if (sigByte == 0x8) {
 				if (registers[x] >= registers[y]) {
-					registers[14] = 0x01; 
+					registers[15] = 0x01; 
 				}
 
 				else {
-					registers[14] = 0x0;
+					registers[15] = 0x0;
 ;				}
 
 				registers[x] -= registers[y];
@@ -402,15 +432,15 @@ void Chip8::executeInstruction() {
 
 		case SUBN:
 			if (registers[y] >= registers[x]) {
-				registers[14] = 0x01;
+				registers[15] = 0x01;
 			
 			}
 
 			else {
-				registers[14] = 0x0;
+				registers[15] = 0x0;
 			}
 
-			registers[y] -= registers[x];
+			registers[x] = registers[y] - registers[x];
 			break;
 
 		case OR:
@@ -423,6 +453,7 @@ void Chip8::executeInstruction() {
 
 		case XOR:
 			registers[x] = registers[x] ^ registers[y];
+			break;
 
 		case RND:
 		{
@@ -481,8 +512,9 @@ void Chip8::executeInstruction() {
 				}
 			}
 
-			registers[14] = collision;
+			registers[15] = collision;
 			SDL_UpdateWindowSurface(window);
+			break;
 
 			 
 		}
@@ -504,7 +536,10 @@ void Chip8::executeInstruction() {
 	
 	}
 
-	programCounter += 2;
+	if (op != JP && op != RET && op != CALL) {
+		programCounter += 2;
+	
+	}
 }
 
 
@@ -514,12 +549,12 @@ char Chip8::viewMemoryCell(int cell) {
 		throw std::out_of_range("Invalid cell provided");
 	}
 
-	return mem[cell];
+	return ram[cell];
 	
 }
 
 int Chip8::determineInstruction(unsigned short instruction ) {
-	int instructionName;
+	int instructionName = -1;
 
 	switch (instruction & 0xF000) {
 		case 0x0000:
@@ -607,6 +642,7 @@ int Chip8::determineInstruction(unsigned short instruction ) {
 			
 			
 			}
+			break;
 
 
 		case 0x9000:
@@ -643,7 +679,7 @@ int Chip8::determineInstruction(unsigned short instruction ) {
 		case 0xF000:
 			switch (instruction & 0x00FF) {
 			
-			case 0x0007: case 0x000A: case 0x0015: case 0x0018: case 0x0029: case 0x0033: case 0x0055: case 0x0065: 
+				case 0x0007: case 0x000A: case 0x0015: case 0x0018: case 0x0029: case 0x0033: case 0x0055: case 0x0065: 
 					instructionName = LD;
 					break;
 
@@ -653,9 +689,11 @@ int Chip8::determineInstruction(unsigned short instruction ) {
 
 							
 			}
+			break;
 
 		default:
 			instructionName = -1;
+			break;
 	}
 	
 	return instructionName;
@@ -742,5 +780,5 @@ char Chip8::determineKeyPress() {
 		}
 		
 	}
-	return NULL;
+	return 0xFF;
 }

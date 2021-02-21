@@ -21,9 +21,8 @@ class Chip8 {
 	private:
 		unsigned char ram[MEMORY_SIZE];
 		unsigned char buffer[ROM_SIZE];
-		unsigned char mem[MEMORY_SIZE];
 		unsigned short stack[STACK_SIZE];
-		unsigned char registers[15];
+		unsigned char registers[16];
 		unsigned char delayTimer;
 		unsigned char soundTimer;
 		unsigned short registerI;
