@@ -5,11 +5,15 @@
 #include "WinSock2.h"
 #include <SDL.h>
 #include <chrono>
-#include<SDL_mixer.h>
+#include <SDL_mixer.h>
+#include <SDL_ttf.h>
+
 
 #undef main
 
 Chip8::Chip8(FILE* romPointer) {
+
+
 	//Initialize arrays
 	for (int i = 0; i < ROM_SIZE; i++) {
 		ram[i] = 0x00;
@@ -45,42 +49,16 @@ Chip8::Chip8(FILE* romPointer) {
 	//Load fontset in 0x000 - 0x050
 	for (int i = 0; i < 80; i++) {
 		ram[i] = fontset[i];
-	
+
 	}
 
-
-
-	// Initialize SDL window
+	// Initialize SDL
 	if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
 		std::cout << "Error initializing SDL" << SDL_GetError() << std::endl;
 		return;
 		
 	}
-
-	 window = SDL_CreateWindow("CHIP-8 Display", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-		DISPLAY_WIDTH_PX * SCALE, DISPLAY_HEIGHT_PX * SCALE, 0);
-
-	if (!window) {
-		std::cout << "Error initializing SDL window" << SDL_GetError();
-	}
-
-	 sur = SDL_GetWindowSurface(window);
-	 
 	
-	//Initialize sound
-	 //SDL_AudioSpec wavSpec;
-	 //Uint32 wavLength;
-	 //Uint8* wavBuffer;
-
-	 //SDL_LoadWAV("beep.wav", &wavSpec, &wavBuffer, &wavLength);
-	 //SDL_AudioDeviceID deviceID = SDL_OpenAudioDevice(NULL, 0, &wavSpec, NULL, 0);
-
-	 //int test = SDL_QueueAudio(deviceID, wavBuffer, wavLength);
-	 //SDL_PauseAudioDevice(deviceID, 0);
-	 //SDL_Delay(3000);
-
-	 //Initialize sound using SDL Mixer
-	 
 	 if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 512) < 0) {
 		 std::cout << "SDL Mix Error";
 	 }
@@ -93,9 +71,6 @@ Chip8::Chip8(FILE* romPointer) {
 	 
 	 //Temporary -- Set volume to super low
 	 Mix_Volume(-1, 1);
-
-
-	 clearDisplay();
 
 
 	//Determine size of file
@@ -125,23 +100,9 @@ Chip8::Chip8(FILE* romPointer) {
 
 Chip8::~Chip8() {
 	Mix_FreeChunk(beep);
-	SDL_DestroyWindow(window);
+	
 	Mix_Quit();
 	SDL_Quit();
-
-}
-
-
-void Chip8::clearDisplay() {
-	for (int i = 0; i < DISPLAY_HEIGHT_PX; i++) {
-		for (int j = 0; j < DISPLAY_WIDTH_PX; j++) {
-			display[j][i] = 0x00;
-		}
-	}
-	
-	//Clear screen to white
-	SDL_FillRect(sur, NULL, SDL_MapRGB(sur->format, 255, 255, 255));
-	SDL_UpdateWindowSurface(window);
 
 }
 
@@ -242,7 +203,7 @@ void Chip8::executeInstruction() {
 	switch (op) {
 	
 		case CLS:
-			clearDisplay();
+			disp.clearDisplay();
 			break;
 
 		case RET:
@@ -493,27 +454,20 @@ void Chip8::executeInstruction() {
 				for (int j = 0; j < 8; j++) {
 					
 					if ((drawLine & mask) != 0 ) {
-						SDL_Rect pix;
-						pix.x = ( ( startX + j ) * SCALE);
-						pix.y = (( startY + i )  * SCALE);
-						pix.w = 1 * SCALE;
-						pix.h = 1 * SCALE;
-						SDL_FillRect(sur, &pix, SDL_MapRGB(sur->format, 0, 0, 0));
-
-						//Collision occured
-						if ( (display[startX + j][startY + i] ^ (drawLine & mask)) == 0) {
-							collision = true;
-						}
-
+						disp.drawPixel(startX + j, startY + i);
 					}
 
+					//Collision occured
+					if ((disp.getDisplay(startX+j,startY+i) ^ (drawLine & mask)) == 0) {
+						collision = true;
+					}
 					mask /= 2;
 
 				}
 			}
 
 			registers[15] = collision;
-			SDL_UpdateWindowSurface(window);
+			
 			break;
 
 			 
