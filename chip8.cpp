@@ -170,7 +170,7 @@ void Chip8::start() {
 			Mix_Pause(-1);
 		}
 	
-	
+		
 	}
 	
 
@@ -262,35 +262,42 @@ void Chip8::executeInstruction() {
 		case SHL:
 			if ((registers[x] & 0x80) >= 0x80) {
 				registers[15] = 0x01;
+				disp.updateRegister(15, 0x01);
 			}
 
 			else {
 				registers[15] = 0x00;
+				disp.updateRegister(15, 0x00);
 			}
 
 			registers[x] *= 2;
+			disp.updateRegister(x, registers[x]);
 			break;
 		
 		case SHR:
 			if ((registers[x] & 0x01) >= 1) {
 				registers[15] = 0x01;
+				disp.updateRegister(15, 0x01);
 			}
 
 			else {
 				registers[15] = 0x00;
+				disp.updateRegister(15, 0x00);
 			}
 
 			registers[x] /= 2;
-
+			disp.updateRegister(x, registers[x]);
 			break;
 
 		case LD:
 			if (sigByte == 0x6) {
 				registers[x] = kk;
+				disp.updateRegister(x, registers[x]);
 			}
 
 			else if (sigByte == 0x8) {
 				registers[x] = registers[y];
+				disp.updateRegister(x, registers[x]);
 			}
 
 			else if (sigByte == 0xA) {
@@ -300,7 +307,8 @@ void Chip8::executeInstruction() {
 			else if (sigByte == 0xF) {
 				switch (kk) {
 					case 0x07:
-						registers[x] == delayTimer;
+						registers[x] = delayTimer;
+						disp.updateRegister(x, registers[x]);
 						break;
 					
 
@@ -349,11 +357,15 @@ void Chip8::executeInstruction() {
 				}
 			}
 
+			
+
+
 			break;
 
 		case ADD:
 			if (sigByte == 0x7) {
 				registers[x] = registers[x] += kk;
+				disp.updateRegister(x, registers[x]);
 			}
 
 			else if (sigByte == 0x8) {
@@ -361,10 +373,12 @@ void Chip8::executeInstruction() {
 
 				if (newVal > 255) {
 					registers[15] = 0x1; //Register VF
+					disp.updateRegister(15, 0x01);
 				}
 
 				else {
 					registers[15] = 0x0;
+					disp.updateRegister(15, 0x00);
 				}
 
 				registers[x] = (unsigned char)(newVal & 0x000000FF);
@@ -380,13 +394,16 @@ void Chip8::executeInstruction() {
 			if (sigByte == 0x8) {
 				if (registers[x] >= registers[y]) {
 					registers[15] = 0x01; 
+					disp.updateRegister(15, 0x01);
 				}
 
 				else {
 					registers[15] = 0x0;
+					disp.updateRegister(15, 0x00);
 ;				}
 
 				registers[x] -= registers[y];
+				disp.updateRegister(x, registers[x]);
 
 			}
 			break;
@@ -394,32 +411,39 @@ void Chip8::executeInstruction() {
 		case SUBN:
 			if (registers[y] >= registers[x]) {
 				registers[15] = 0x01;
+				disp.updateRegister(15, 0x01);
 			
 			}
 
 			else {
 				registers[15] = 0x0;
+				disp.updateRegister(15, 0x00);
 			}
 
 			registers[x] = registers[y] - registers[x];
+			disp.updateRegister(x, registers[x]);
 			break;
 
 		case OR:
 			registers[x] = registers[x] | registers[y];
+			disp.updateRegister(x, registers[x]);
 			break;
 
 		case AND:
 			registers[x] = registers[x] & registers[y];
+			disp.updateRegister(x, registers[x]);
 			break;
 
 		case XOR:
 			registers[x] = registers[x] ^ registers[y];
+			disp.updateRegister(x, registers[x]);
 			break;
 
 		case RND:
 		{
 			unsigned char randChar = (unsigned char)(rand() % 255 + 1);
 			registers[x] = randChar & kk;
+			disp.updateRegister(x, registers[x]);
 			break;
 		}
 
@@ -431,15 +455,15 @@ void Chip8::executeInstruction() {
 			unsigned char startY = registers[y];
 
 			//Check if sprite will get cut off on display
-			if (registers[x] + 8 >= DISPLAY_WIDTH_PX) {
+		/*	if (registers[x] + 8 >= CHIP8_DISPLAY_WIDTH_PX) {
 				startX = 0x00;
 			
 			}
 
-			if (registers[y] + (int)nib >= DISPLAY_HEIGHT_PX) {
+			if (registers[y] + (int)nib >= CHIP8_DISPLAY_HEIGHT_PX) {
 				startY = 0x00;
 				
-			}
+			}*/
 
 			//Grab sprite
 			for (int i = 0; i < nib; i++) {
@@ -450,23 +474,30 @@ void Chip8::executeInstruction() {
 			//Draw in lines of 8 pixels nib times
 			for (int i = 0; i < nib; i++) {
 				unsigned char drawLine = sprite[i];
+
 				unsigned char mask = 0x80;
 				for (int j = 0; j < 8; j++) {
 					
-					if ((drawLine & mask) != 0 ) {
-						disp.drawPixel(startX + j, startY + i);
+					if ((drawLine & mask) != 0) {
+						//Collision occured
+						if ((disp.getDisplay((startX + j)%CHIP8_DISPLAY_WIDTH_PX, (startY + i)%CHIP8_DISPLAY_HEIGHT_PX) ^ (drawLine & mask)) == 0) {
+							collision = true;
+						}
+
+
+						disp.setDisplay((startX + j) % CHIP8_DISPLAY_WIDTH_PX, (startY + i) % CHIP8_DISPLAY_HEIGHT_PX);
 					}
 
-					//Collision occured
-					if ((disp.getDisplay(startX+j,startY+i) ^ (drawLine & mask)) == 0) {
-						collision = true;
-					}
+				
+				
 					mask /= 2;
 
 				}
 			}
 
 			registers[15] = collision;
+			disp.updateRegister(15, registers[15]);
+			disp.updateScreen();
 			
 			break;
 

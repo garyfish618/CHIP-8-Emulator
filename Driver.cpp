@@ -3,7 +3,7 @@
 
 int main() {
 	FILE* romFile;
-	errno_t fileError = fopen_s(&romFile, "Tests/Pong.ch8", "rb");
+	errno_t fileError = fopen_s(&romFile, "Tests/BRIX", "rb");
 
 	if (fileError != 0) {
 		
