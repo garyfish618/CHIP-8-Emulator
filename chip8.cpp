@@ -4,7 +4,7 @@
 #include <iostream>
 #include "WinSock2.h"
 #include <SDL.h>
-#include <chrono>
+
 #include <SDL_mixer.h>
 #include <SDL_ttf.h>
 
@@ -107,73 +107,122 @@ Chip8::~Chip8() {
 }
 
 void Chip8::start() {
-	double totalTime = 0;
-	double delayLeftOver = 0;
-	double soundLeftOver = 0;
+	//double totalTime = 0;
+	//double delayLeftOver = 0;
+	//double soundLeftOver = 0;
+
+	//Grab current time in milliseconds
+	timeBefore = std::chrono::high_resolution_clock::now();
+	
+	Mix_PlayChannel(-1, beep, -1);
+	Mix_Pause(-1);
+	
 	while (1) {
 		if (soundTimer != 0 && Mix_Playing != 0) {
-			Mix_PlayChannel(-1, beep, -1);
+			Mix_Resume(-1);
 		}
 
-		std::chrono::high_resolution_clock::time_point timeBefore = std::chrono::high_resolution_clock::now();
-		executeInstruction();
-		std::chrono::high_resolution_clock::time_point timeAfter = std::chrono::high_resolution_clock::now();
+		std::chrono::high_resolution_clock::time_point timeNow = std::chrono::high_resolution_clock::now();
+		std::chrono::duration<double, std::milli> elapsed = timeNow - timeBefore;
+		
 
-		std::chrono::duration<double, std::milli> instructionTime = timeAfter - timeBefore;
-		totalTime += instructionTime.count();
+		if (elapsed.count() >= 1000 / FRAME_RATE) {
+			timeBefore = timeNow;
 
-		if (totalTime / 16.667 >= 1) {
-			double decreaseTimer = 1;
-			
+			if (soundTimer > 0x00) {
+				soundTimer--;
 
-			//Update registers if need be
-			if (delayTimer != 0x00) {
-				delayLeftOver += std::modf(((totalTime / 16.667) + delayLeftOver), &decreaseTimer);
-				
-				if ((int)decreaseTimer >= delayTimer) {
-					delayTimer = 0x00;
-					delayLeftOver = 0;
+				if (soundTimer == 0x00) {
+					Mix_Pause(-1);
 				}
-
-				else {	
-					delayTimer -= (int)decreaseTimer;
-				}
-
-				
-				
 			}
 
-			if (soundTimer != 0x00) {
-				soundLeftOver += std::modf(((totalTime / 16.667) + soundLeftOver), &decreaseTimer);
-
-				if ((int)decreaseTimer >= soundTimer) {
-					soundTimer = 0x00;
-					soundLeftOver = 0;
-				}
-
-				else {
-					soundTimer -= (int)decreaseTimer;
-				}
-
-				
-				
+			if (delayTimer >= 0x00) {
+				delayTimer--;
 			}
 
-			//Move timer back
-			totalTime -= decreaseTimer * 16.667;
+
+
+			for (int i = 0; i < 400; i++) {
+				executeInstruction();
+				
+				timeNow = std::chrono::high_resolution_clock::now();
+				elapsed = timeNow - timeBefore;
 
 
 			
+			}
+
+			
+
 		}
 
-		if (soundTimer == 0x00) {
-			Mix_Pause(-1);
-		}
+
+		//std::chrono::high_resolution_clock::time_point timeBefore = std::chrono::high_resolution_clock::now();
+		//executeInstruction();
+		//std::chrono::high_resolution_clock::time_point timeAfter = std::chrono::high_resolution_clock::now();
+
+		//std::chrono::duration<double, std::milli> instructionTime = timeAfter - timeBefore;
+		//totalTime += instructionTime.count();
+
+		//if (totalTime / 16.667 >= 1) {
+		//	double decreaseTimer = 1;
+		//	
+
+		//	//Update registers if need be
+		//	if (delayTimer != 0x00) {
+		//		delayLeftOver += std::modf(((totalTime / 16.667) + delayLeftOver), &decreaseTimer);
+		//		
+		//		if ((int)decreaseTimer >= delayTimer) {
+		//			delayTimer = 0x00;
+		//			delayLeftOver = 0;
+		//		}
+
+		//		else {	
+		//			delayTimer -= (int)decreaseTimer;
+		//		}
+
+		//		
+		//		
+		//	}
+
+		//	if (soundTimer != 0x00) {
+		//		soundLeftOver += std::modf(((totalTime / 16.667) + soundLeftOver), &decreaseTimer);
+
+		//		if ((int)decreaseTimer >= soundTimer) {
+		//			soundTimer = 0x00;
+		//			soundLeftOver = 0;
+		//		}
+
+		//		else {
+		//			soundTimer -= (int)decreaseTimer;
+		//		}
+
+		//		
+		//		
+		//	}
+
+		//	//Move timer back
+		//	totalTime -= decreaseTimer * 16.667;
+
+
+		//	
+		//}
+
+		//if (soundTimer == 0x00) {
+		//	Mix_Pause(-1);
+		//}
 	
 		
 	}
 	
 
+
+}
+
+void Chip8::updateTimers() {
+	std::chrono::high_resolution_clock::time_point timeNow = std::chrono::high_resolution_clock::now();
+	std::chrono::duration<double, std::milli> elapsed = timeNow - timeBefore;
 
 }
 
@@ -480,7 +529,7 @@ void Chip8::executeInstruction() {
 					
 					if ((drawLine & mask) != 0) {
 						//Collision occured
-						if ((disp.getDisplay((startX + j)%CHIP8_DISPLAY_WIDTH_PX, (startY + i)%CHIP8_DISPLAY_HEIGHT_PX) ^ (drawLine & mask)) == 0) {
+						if ((disp.getDisplay( (startX + j)%CHIP8_DISPLAY_WIDTH_PX, (startY + i)%CHIP8_DISPLAY_HEIGHT_PX ) & (drawLine & mask) ) != 0) {
 							collision = true;
 						}
 
