@@ -1,2 +1,11 @@
 *.vcxproj
 *.vcxproj.*
+*.dll
+*.exe
+*.log
+*.tlog
+*.pdb
+
+include
+lib
+Debug
