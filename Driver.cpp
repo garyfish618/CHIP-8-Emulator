@@ -1,18 +1,20 @@
 #include "Chip8.h"
 #include <iostream>
+#include <errno.h>
 
 int main() {
-	FILE* romFile;
-	errno_t fileError = fopen_s(&romFile, "Tests/BRIX", "rb");
+	errno = 0;
+	FILE* romFile = fopen("Tests/BRIX.c8", "rb");
 
-	if (fileError != 0) {
+	if (romFile == NULL) {
 		
-		throw std::invalid_argument("Invalid filename");
+		std::cout << "Could not open file: " << errno;
 	}
 	
 	Chip8 emulator(romFile);
 
 		
 	emulator.start();
+	
 
 }
