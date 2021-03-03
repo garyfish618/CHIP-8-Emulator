@@ -13,6 +13,7 @@
 #define STACK_SIZE 16
 #define ROM_START_ADDR 0x200
 #define FRAME_RATE 60
+#define CPU_RATE 800
 
 enum instructionType {CLS, RET, SYS, JP, CALL, SE, SNE, LD, OR, AND, XOR, ADD, SUB, SHR, SUBN, SHL, RND, DRW, SKP, SKNP};
 
@@ -28,8 +29,9 @@ class Chip8 {
 		unsigned short registerI;
 		unsigned short programCounter;
 		unsigned short* stackPointer;
+		bool beepPlaying;
 
-		std::chrono::high_resolution_clock::time_point timeBefore;
+		
 		
 		
 		Mix_Chunk* beep;
@@ -40,7 +42,7 @@ class Chip8 {
 		int determineInstruction(unsigned short instruction);
 		char determineKeyPress();
 		void executeInstruction();
-		void updateTimers();
+		void toggleSound(int state);
 	
 	public:
 		void start();

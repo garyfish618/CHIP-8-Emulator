@@ -8,10 +8,17 @@
 #include <SDL_mixer.h>
 #include <SDL_ttf.h>
 
-
 #undef main
 
 Chip8::Chip8(FILE* romPointer) {
+	delayTimer = 0x00;
+	soundTimer = 0x00;
+	registerI = 0x0000;
+	programCounter = 0x0200;
+	registerI = 0;
+	stackPointer = stack - 1;
+	beepPlaying = false;
+
 
 
 	//Initialize arrays
@@ -92,9 +99,7 @@ Chip8::Chip8(FILE* romPointer) {
 		ram[i] = buffer[i - 0x200];
 	}
 
-	programCounter = 0x0200;
-	registerI = 0;
-	stackPointer = stack - 1;
+
 	
 }
 
@@ -107,112 +112,91 @@ Chip8::~Chip8() {
 }
 
 void Chip8::start() {
-	//double totalTime = 0;
-	//double delayLeftOver = 0;
-	//double soundLeftOver = 0;
+	
 
 	//Grab current time in milliseconds
-	timeBefore = std::chrono::high_resolution_clock::now();
+	std::chrono::high_resolution_clock::time_point cpuTimeBefore = std::chrono::high_resolution_clock::now();
+	std::chrono::high_resolution_clock::time_point timersTimeBefore = cpuTimeBefore;
 	
 	Mix_PlayChannel(-1, beep, -1);
 	Mix_Pause(-1);
 	
 	while (1) {
-		if (soundTimer != 0 && Mix_Playing != 0) {
-			Mix_Resume(-1);
+		bool skipCycle = false;
+
+
+		// if (soundTimer != 0 && !beepPlaying) {
+			
+		// 	Mix_Resume(-1);
+		// 	//Since sound just resumed, decrement at start of next cycle
+		// 	//skipCycle = true;
+		// 	beepPlaying = true;
+		// }
+
+		std::chrono::high_resolution_clock::time_point timeBefore = std::chrono::high_resolution_clock::now();
+
+		for(int i = 0; i < CPU_RATE/FRAME_RATE; i++) {
+			executeInstruction();
+
 		}
+
+		if (soundTimer > 0x00) {
+			soundTimer--;
+
+			if (soundTimer == 0x00) {
+				toggleSound(0);
+			}
+		}
+
+		if (delayTimer > 0x00) {
+			delayTimer--;
+		}
+
 
 		std::chrono::high_resolution_clock::time_point timeNow = std::chrono::high_resolution_clock::now();
+
 		std::chrono::duration<double, std::milli> elapsed = timeNow - timeBefore;
-		
 
-		if (elapsed.count() >= 1000 / FRAME_RATE) {
-			timeBefore = timeNow;
+		if(elapsed.count() > 16.66667) {
+			Sleep(16.66667);
 
-			if (soundTimer > 0x00) {
-				soundTimer--;
+		}
 
-				if (soundTimer == 0x00) {
-					Mix_Pause(-1);
-				}
-			}
-
-			if (delayTimer >= 0x00) {
-				delayTimer--;
-			}
-
-
-
-			for (int i = 0; i < 400; i++) {
-				executeInstruction();
-				
-				timeNow = std::chrono::high_resolution_clock::now();
-				elapsed = timeNow - timeBefore;
-
-
-			
-			}
-
-			
+		else {
+			Sleep(16.66667 - elapsed.count());
 
 		}
 
 
-		//std::chrono::high_resolution_clock::time_point timeBefore = std::chrono::high_resolution_clock::now();
-		//executeInstruction();
-		//std::chrono::high_resolution_clock::time_point timeAfter = std::chrono::high_resolution_clock::now();
+		
+		// std::chrono::duration<double, std::milli> elapsed; 
 
-		//std::chrono::duration<double, std::milli> instructionTime = timeAfter - timeBefore;
-		//totalTime += instructionTime.count();
+		// std::chrono::high_resolution_clock::time_point timersTimeNow = std::chrono::high_resolution_clock::now();
+		// elapsed = timersTimeNow - timersTimeBefore;
 
-		//if (totalTime / 16.667 >= 1) {
-		//	double decreaseTimer = 1;
-		//	
+		// if (elapsed.count() >= 1000 / FRAME_RATE) {
+		// 	if (soundTimer > 0x00) {
+		// 		soundTimer--;
 
-		//	//Update registers if need be
-		//	if (delayTimer != 0x00) {
-		//		delayLeftOver += std::modf(((totalTime / 16.667) + delayLeftOver), &decreaseTimer);
-		//		
-		//		if ((int)decreaseTimer >= delayTimer) {
-		//			delayTimer = 0x00;
-		//			delayLeftOver = 0;
-		//		}
+		// 		if (soundTimer == 0x00) {
+		// 			toggleSound(0);
+		// 		}
+		// 	}
 
-		//		else {	
-		//			delayTimer -= (int)decreaseTimer;
-		//		}
+		// 	if (delayTimer > 0x00) {
+		// 		delayTimer--;
+		// 	}
 
-		//		
-		//		
-		//	}
+		// 	timersTimeBefore = timersTimeNow;
+		// }
 
-		//	if (soundTimer != 0x00) {
-		//		soundLeftOver += std::modf(((totalTime / 16.667) + soundLeftOver), &decreaseTimer);
+		// elapsed = cpuTimeNow - cpuTimeBefore;
+		
+		// if(elapsed.count() >= 1000 / CPU_RATE) {
+		// 	executeInstruction();
+		// 	cpuTimeBefore = cpuTimeNow;
+		// }		
 
-		//		if ((int)decreaseTimer >= soundTimer) {
-		//			soundTimer = 0x00;
-		//			soundLeftOver = 0;
-		//		}
-
-		//		else {
-		//			soundTimer -= (int)decreaseTimer;
-		//		}
-
-		//		
-		//		
-		//	}
-
-		//	//Move timer back
-		//	totalTime -= decreaseTimer * 16.667;
-
-
-		//	
-		//}
-
-		//if (soundTimer == 0x00) {
-		//	Mix_Pause(-1);
-		//}
-	
 		
 	}
 	
@@ -220,9 +204,17 @@ void Chip8::start() {
 
 }
 
-void Chip8::updateTimers() {
-	std::chrono::high_resolution_clock::time_point timeNow = std::chrono::high_resolution_clock::now();
-	std::chrono::duration<double, std::milli> elapsed = timeNow - timeBefore;
+void Chip8::toggleSound(int state) {
+
+	if(beepPlaying && state == 0) {
+		Mix_Pause(-1);
+		beepPlaying = false;
+	}
+
+	if(!beepPlaying && state == 1) {
+		Mix_Resume(-1);
+		beepPlaying = true;
+	}
 
 }
 
@@ -379,6 +371,9 @@ void Chip8::executeInstruction() {
 
 					case 0x18:
 						soundTimer = registers[x];
+						if (soundTimer != 0x00) {
+							toggleSound(1);
+						}
 						break;
 
 					case 0x29:
