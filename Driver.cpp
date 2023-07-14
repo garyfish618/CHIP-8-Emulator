@@ -1,4 +1,4 @@
-#include "Chip8.h"
+#include "chip8.h"
 #include <iostream>
 #include <errno.h>
 
@@ -12,9 +12,5 @@ int main() {
 	}
 	
 	Chip8 emulator(romFile);
-
-		
 	emulator.start();
-	
-
 }

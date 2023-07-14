@@ -2,11 +2,10 @@
 #include <string>
 #include <stdexcept>
 #include <iostream>
-#include "WinSock2.h"
-#include <SDL.h>
+#include <SDL2/SDL.h>
 
-#include <SDL_mixer.h>
-#include <SDL_ttf.h>
+#include <SDL2/SDL_mixer.h>
+#include <SDL2/SDL_ttf.h>
 
 #undef main
 
@@ -112,8 +111,6 @@ Chip8::~Chip8() {
 }
 
 void Chip8::start() {
-	
-
 	//Grab current time in milliseconds
 	std::chrono::high_resolution_clock::time_point cpuTimeBefore = std::chrono::high_resolution_clock::now();
 	std::chrono::high_resolution_clock::time_point timersTimeBefore = cpuTimeBefore;
@@ -123,15 +120,6 @@ void Chip8::start() {
 	
 	while (1) {
 		bool skipCycle = false;
-
-
-		// if (soundTimer != 0 && !beepPlaying) {
-			
-		// 	Mix_Resume(-1);
-		// 	//Since sound just resumed, decrement at start of next cycle
-		// 	//skipCycle = true;
-		// 	beepPlaying = true;
-		// }
 
 		std::chrono::high_resolution_clock::time_point timeBefore = std::chrono::high_resolution_clock::now();
 
@@ -152,56 +140,21 @@ void Chip8::start() {
 			delayTimer--;
 		}
 
-
 		std::chrono::high_resolution_clock::time_point timeNow = std::chrono::high_resolution_clock::now();
 
 		std::chrono::duration<double, std::milli> elapsed = timeNow - timeBefore;
 
 		if(elapsed.count() > 16.66667) {
-			Sleep(16.66667);
+            auto delay = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::duration<double, std::milli>(16.66667))
+			std::sleep_for(std::chrono::milliseconds(delay));
 
 		}
 
 		else {
 			Sleep(16.66667 - elapsed.count());
 
-		}
-
-
-		
-		// std::chrono::duration<double, std::milli> elapsed; 
-
-		// std::chrono::high_resolution_clock::time_point timersTimeNow = std::chrono::high_resolution_clock::now();
-		// elapsed = timersTimeNow - timersTimeBefore;
-
-		// if (elapsed.count() >= 1000 / FRAME_RATE) {
-		// 	if (soundTimer > 0x00) {
-		// 		soundTimer--;
-
-		// 		if (soundTimer == 0x00) {
-		// 			toggleSound(0);
-		// 		}
-		// 	}
-
-		// 	if (delayTimer > 0x00) {
-		// 		delayTimer--;
-		// 	}
-
-		// 	timersTimeBefore = timersTimeNow;
-		// }
-
-		// elapsed = cpuTimeNow - cpuTimeBefore;
-		
-		// if(elapsed.count() >= 1000 / CPU_RATE) {
-		// 	executeInstruction();
-		// 	cpuTimeBefore = cpuTimeNow;
-		// }		
-
-		
+		}		
 	}
-	
-
-
 }
 
 void Chip8::toggleSound(int state) {
