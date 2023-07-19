@@ -1,6 +1,6 @@
+*.obj
 *.vcxproj
 *.vcxproj.*
-*.dll
 *.exe
 *.log
 *.tlog

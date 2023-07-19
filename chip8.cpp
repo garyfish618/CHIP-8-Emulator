@@ -3,7 +3,7 @@
 #include <stdexcept>
 #include <iostream>
 #include <SDL2/SDL.h>
-
+#include <thread>
 #include <SDL2/SDL_mixer.h>
 #include <SDL2/SDL_ttf.h>
 
@@ -145,13 +145,14 @@ void Chip8::start() {
 		std::chrono::duration<double, std::milli> elapsed = timeNow - timeBefore;
 
 		if(elapsed.count() > 16.66667) {
-            auto delay = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::duration<double, std::milli>(16.66667))
-			std::sleep_for(std::chrono::milliseconds(delay));
+            auto delay = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::duration<double, std::milli>(16.66667));
+			std::this_thread::sleep_for(std::chrono::milliseconds(delay));
 
 		}
 
 		else {
-			Sleep(16.66667 - elapsed.count());
+			auto delay = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::duration<double, std::milli>(16.66667 - elapsed.count()));	
+			std::this_thread::sleep_for(std::chrono::milliseconds(delay));
 
 		}		
 	}
@@ -690,7 +691,7 @@ char Chip8::determineKeyPress() {
 			char val;
 			switch (event.key.keysym.sym) {
 
-				case SDLK_0:
+				case SDLK_x:
 					val = 0x00;
 					break;
 
@@ -706,57 +707,58 @@ char Chip8::determineKeyPress() {
 					val = 0x03;
 					break;
 
-				case SDLK_4:
+				case SDLK_q:
 					val = 0x04;
 					break;
 
-				case SDLK_5:
+				case SDLK_w:
 					val = 0x05;
 					break;
 
-				case SDLK_6:
+				case SDLK_e:
 					val = 0x06;
 					break;
 
-				case SDLK_7:
+				case SDLK_a:
 					val = 0x07;
 					break;
 
-				case SDLK_8:
+				case SDLK_s:
 					val = 0x08;
 					break;
 
-				case SDLK_9:
+				case SDLK_d:
 					val = 0x09;
 					break;
 
-				case SDLK_a:
+				case SDLK_z:
 					val = 0x0A;
 					break;
 
-				case SDLK_b:
+				case SDLK_c:
 					val = 0x0B;
 					break;
 
-				case SDLK_c:
+				case SDLK_4:
 					val = 0x0C;
 					break;
 
-				case SDLK_d:
+				case SDLK_r:
 					val = 0x0D;
 					break;
 
-				case SDLK_e:
+				case SDLK_f:
 					val = 0x0E;
 					break;
 
-				case SDLK_f:
-					val = 0x0F;
+				case SDLK_v:
+					val= 0x0F;
 					break;
 
 				default:
 					//Not a control key
 					val = 0xFF;
+					break;
 			}
 			return val;
 		}
