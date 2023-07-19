@@ -20,42 +20,28 @@ enum instructionType {CLS, RET, SYS, JP, CALL, SE, SNE, LD, OR, AND, XOR, ADD, S
 class Chip8 {
 	
 	private:
-		unsigned char ram[MEMORY_SIZE];
-		unsigned char buffer[ROM_SIZE];
-		unsigned short stack[STACK_SIZE];
-		unsigned char registers[16];
-		unsigned char delayTimer;
-		unsigned char soundTimer;	
-		unsigned short registerI;
-		unsigned short programCounter;
-		unsigned short* stackPointer;
+		uint8_t ram[MEMORY_SIZE];
+		uint8_t buffer[ROM_SIZE];
+		uint16_t stack[STACK_SIZE];
+		uint8_t registers[16];
+		uint8_t delayTimer;
+		uint8_t soundTimer;	
+		uint16_t registerI;
+		uint16_t programCounter;
+		uint16_t* stackPointer;
 		bool beepPlaying;
-
-		
-		
 		
 		Mix_Chunk* beep;
 		Display disp;
-		
-		//TODO Create timer and sound registers
 
-		int determineInstruction(unsigned short instruction);
-		char determineKeyPress();
+		uint16_t determineInstruction(uint16_t instruction);
+		uint8_t determineKeyPress();
 		void executeInstruction();
-		void toggleSound(int state);
+		void toggleSound(uint16_t state);
 	
 	public:
 		void start();
-		char viewMemoryCell(int cell);
+		uint8_t viewMemoryCell(uint16_t cell);
 		Chip8(FILE*);
 		~Chip8();
-
-
-		
-
-
-	
-
-
-
 };

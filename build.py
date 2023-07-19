@@ -36,8 +36,13 @@ def main():
     # Set debug
     if debug:
         command += "-g "
+    
+    if platform.system() == 'Windows':
+        process = subprocess.Popen(["powershell", "-Command", command], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    
+    if platform.system() == 'Linux':
+        process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-    process = subprocess.Popen(["powershell", "-Command", command], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     output, error = process.communicate()
 
     # Decode and print the output

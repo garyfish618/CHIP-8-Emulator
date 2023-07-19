@@ -1,4 +1,4 @@
-#include "Chip8.h"
+#include "includes/Chip8.h"
 #include <string>
 #include <stdexcept>
 #include <iostream>
@@ -119,6 +119,12 @@ void Chip8::start() {
 	Mix_Pause(-1);
 	
 	while (1) {
+		SDL_Event event;
+		if (SDL_PollEvent(&event)) {
+			if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE) {
+				return;
+			}
+		}
 		bool skipCycle = false;
 
 		std::chrono::high_resolution_clock::time_point timeBefore = std::chrono::high_resolution_clock::now();
@@ -158,7 +164,7 @@ void Chip8::start() {
 	}
 }
 
-void Chip8::toggleSound(int state) {
+void Chip8::toggleSound(uint16_t state) {
 
 	if(beepPlaying && state == 0) {
 		Mix_Pause(-1);
@@ -187,11 +193,11 @@ void Chip8::executeInstruction() {
 		kk = lowest 8 bits of instruction
 	*/
 
-	unsigned short addr = nextInstruction & 0x0FFF;
-	unsigned char nib = nextInstruction & 0x000F;
-	unsigned char x = (nextInstruction & 0x0F00) >> 8;
-	unsigned char y = (nextInstruction & 0x00F0) >> 4;
-	unsigned char kk = (unsigned char)nextInstruction & 0x00FF;
+	uint16_t addr = nextInstruction & 0x0FFF;
+	uint8_t nib = nextInstruction & 0x000F;
+	uint8_t x = (nextInstruction & 0x0F00) >> 8;
+	uint8_t y = (nextInstruction & 0x00F0) >> 4;
+	uint8_t kk = (uint8_t)nextInstruction & 0x00FF;
 
 	unsigned short sigByte = (nextInstruction & 0xF000) >> 12;
 	
@@ -310,7 +316,7 @@ void Chip8::executeInstruction() {
 					case 0x0A:
 						while (1) {
 
-							unsigned char val = determineKeyPress();
+							uint8_t val = determineKeyPress();
 
 							if (val != 0xFF) {
 								registers[x] = val;
@@ -367,7 +373,7 @@ void Chip8::executeInstruction() {
 			}
 
 			else if (sigByte == 0x8) {
-				unsigned int newVal = registers[x] + registers[y];
+				uint16_t newVal = registers[x] + registers[y];
 
 				if (newVal > 255) {
 					registers[15] = 0x1; //Register VF
@@ -379,7 +385,7 @@ void Chip8::executeInstruction() {
 					disp.updateRegister(15, 0x00);
 				}
 
-				registers[x] = (unsigned char)(newVal & 0x000000FF);
+				registers[x] = (uint8_t)(newVal & 0x000000FF);
 			}
 
 			else if (sigByte == 0xF) {
@@ -439,7 +445,7 @@ void Chip8::executeInstruction() {
 
 		case RND:
 		{
-			unsigned char randChar = (unsigned char)(rand() % 255 + 1);
+			uint8_t randChar = (uint8_t)(rand() % 255 + 1);
 			registers[x] = randChar & kk;
 			disp.updateRegister(x, registers[x]);
 			break;
@@ -448,9 +454,9 @@ void Chip8::executeInstruction() {
 		case DRW:
 		{
 			bool collision = false;
-			unsigned char* sprite = new unsigned char[(int)nib];
-			unsigned char startX = registers[x];
-			unsigned char startY = registers[y];
+			uint8_t* sprite = new uint8_t[(uint16_t)nib];
+			uint8_t startX = registers[x];
+			uint8_t startY = registers[y];
 
 			//Check if sprite will get cut off on display
 		/*	if (registers[x] + 8 >= CHIP8_DISPLAY_WIDTH_PX) {
@@ -464,17 +470,17 @@ void Chip8::executeInstruction() {
 			}*/
 
 			//Grab sprite
-			for (int i = 0; i < nib; i++) {
+			for (uint16_t i = 0; i < nib; i++) {
 				sprite[i] = ram[(registerI + i)];
 				sprite[i+1] = ram[(registerI + (i+1))];
 			}
 
 			//Draw in lines of 8 pixels nib times
-			for (int i = 0; i < nib; i++) {
-				unsigned char drawLine = sprite[i];
+			for (uint16_t i = 0; i < nib; i++) {
+				uint8_t drawLine = sprite[i];
 
-				unsigned char mask = 0x80;
-				for (int j = 0; j < 8; j++) {
+				uint8_t mask = 0x80;
+				for (uint16_t j = 0; j < 8; j++) {
 					
 					if ((drawLine & mask) != 0) {
 						//Collision occured
@@ -526,7 +532,7 @@ void Chip8::executeInstruction() {
 }
 
 
-char Chip8::viewMemoryCell(int cell) {
+uint8_t Chip8::viewMemoryCell(uint16_t cell) {
 	// Valid cells are only 0- (MEMORY_SIZE - 1)
 	if (cell >= MEMORY_SIZE) {
 		throw std::out_of_range("Invalid cell provided");
@@ -536,7 +542,7 @@ char Chip8::viewMemoryCell(int cell) {
 	
 }
 
-int Chip8::determineInstruction(unsigned short instruction ) {
+uint16_t Chip8::determineInstruction(uint16_t instruction ) {
 	int instructionName = -1;
 
 	switch (instruction & 0xF000) {
@@ -684,13 +690,12 @@ int Chip8::determineInstruction(unsigned short instruction ) {
 
 }
 
-char Chip8::determineKeyPress() {
+uint8_t Chip8::determineKeyPress() {
 	SDL_Event event;
 	if (SDL_PollEvent(&event)) {
 		if (event.type == SDL_KEYDOWN) {
-			char val;
+			uint8_t val;
 			switch (event.key.keysym.sym) {
-
 				case SDLK_x:
 					val = 0x00;
 					break;

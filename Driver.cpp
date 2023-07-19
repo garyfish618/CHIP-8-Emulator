@@ -1,4 +1,4 @@
-#include "chip8.h"
+#include "includes/Chip8.h"
 #include <iostream>
 #include <errno.h>
 
